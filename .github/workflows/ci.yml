@@ -27,6 +27,9 @@ jobs:
       - name: Compilar proyecto (Omitiendo tests de BD)
         run: ./mvnw clean package -DskipTests
 
+      - name: Ejecutar pruebas unitarias
+        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest
+
       - name: Subir artefacto
         uses: actions/upload-artifact@v4
         with:
