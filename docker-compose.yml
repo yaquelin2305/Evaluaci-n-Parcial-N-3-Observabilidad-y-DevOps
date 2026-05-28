@@ -1,0 +1,29 @@
+services:
+  tickets_db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: tickets_db
+      POSTGRES_USER: ${DB_USERNAME:-postgres}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-postgres} -d tickets_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    image: ghcr.io/yaquelin2305/tickets-app-cicd/tickets-app:${IMAGE_TAG:-latest}
+    ports:
+      - "8081:8081"
+    environment:
+      DB_URL: jdbc:postgresql://tickets_db:5432/tickets_db
+      DB_USERNAME: ${DB_USERNAME:-postgres}
+      DB_PASSWORD: ${DB_PASSWORD}
+    depends_on:
+      tickets_db:
+        condition: service_healthy
+
+volumes:
+  postgres_data:
