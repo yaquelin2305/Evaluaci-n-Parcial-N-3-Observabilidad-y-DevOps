@@ -1,13 +1,18 @@
-name: Java CI con Maven
+name: CI/CD Pipeline - Tickets App
 
 on:
   push:
-    branches: [ "develop" ]
+    branches: [ "main", "develop" ]
   pull_request:
     branches: [ "main" ]
 
 jobs:
-  build:
+
+  # ==========================================
+  # 🧪 1. TESTS + SONARCLOUD
+  # ==========================================
+  sonar:
+    name: Tests & SonarCloud Analysis
     runs-on: ubuntu-latest
 
     steps:
@@ -24,14 +29,74 @@ jobs:
       - name: Dar permisos de ejecucion al wrapper
         run: chmod +x mvnw
 
-      - name: Compilar proyecto (Omitiendo tests de BD)
-        run: ./mvnw clean package -DskipTests
-
       - name: Ejecutar pruebas unitarias
-        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest
+        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest
 
-      - name: Subir artefacto
-        uses: actions/upload-artifact@v4
+      - name: Analisis SonarCloud (bloquea si falla)
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        run: |
+          ./mvnw verify sonar:sonar \
+            -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest \
+            -Dsonar.projectKey="${{ secrets.SONAR_PROJECT_KEY }}" \
+            -Dsonar.organization="${{ secrets.SONAR_ORGANIZATION }}" \
+            -Dsonar.host.url="https://sonarcloud.io" \
+            -Dsonar.token="${{ secrets.SONAR_TOKEN }}"
+
+  # ==========================================
+  # 🐳 2. BUILD DOCKER IMAGE
+  # ==========================================
+  build-image:
+    name: Build & Push Docker Image
+    runs-on: ubuntu-latest
+    needs: sonar
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Login a GitHub Packages
+        uses: docker/login-action@v3
         with:
-          name: tickets-app
-          path: target/*.jar
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build y Push imagen Docker
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository }}/tickets-app:latest
+            ghcr.io/${{ github.repository }}/tickets-app:${{ github.sha }}
+
+  # ==========================================
+  # 📦 3. DEPLOY CON DOCKER COMPOSE
+  # ==========================================
+  deploy:
+    name: Deploy with Docker Compose
+    runs-on: ubuntu-latest
+    needs: build-image
+
+    steps:
+      - name: Checkout del codigo
+        uses: actions/checkout@v4
+
+      - name: Login a GitHub Packages
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Deploy via Docker Compose
+        env:
+          DB_PASSWORD: ${{ secrets.DB_PASSWORD }}
+          IMAGE_TAG: ${{ github.sha }}
+        run: |
+          echo "Desplegando version: ${{ github.sha }}"
+          docker compose up -d
+
+      - name: Verificar contenedores activos
+        run: docker ps
