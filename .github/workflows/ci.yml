@@ -53,6 +53,12 @@ jobs:
             -Dsonar.host.url="https://sonarcloud.io" \
             -Dsonar.token="${{ secrets.SONAR_TOKEN }}"
 
+      - name: Subir reporte de cobertura Jacoco
+        uses: actions/upload-artifact@v4
+        with:
+          name: jacoco-report-${{ github.sha }}
+          path: target/site/jacoco/
+
       - name: Compilar proyecto
         run: ./mvnw clean package -DskipTests
 
