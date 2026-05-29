@@ -1,77 +1,84 @@
+Markdown
 # 🎟️ Microservicio de Tickets - Capa DevOps Avanzada
 
-Este repositorio contiene el **Microservicio de Tickets** desarrollado en Java 17 con Spring Boot bajo una Arquitectura Hexagonal. En esta segunda etapa del proyecto, se ha implementado un ciclo completo de **Integración Continua (CI)** y **Entrega Continua (CD)** automatizado a través de **GitHub Actions**, incorporando prácticas avanzadas de contenerización, análisis estático de código y gobernanza de seguridad.
+Este repositorio contiene la solución del **Microservicio de Tickets** desarrollado en Java 17 con Spring Boot bajo los lineamientos de la Arquitectura Hexagonal. En esta entrega, se ha consolidado un ciclo completo de **Integración Continua (CI)** y **Entrega Continua (CD)** totalmente automatizado a través de **GitHub Actions**, incorporando empaquetado seguro, análisis estático de código, gobernanza estricta de accesos y despliegues controlados en entornos aislados.
 
 ---
 
 ## 🚀 1. Arquitectura del Pipeline de CI/CD
 
-El flujo automatizado se encuentra configurado en el archivo `.github/workflows/ci-cd.yml` y se activa de manera automática ante cada evento de `push` en la rama principal (`main`). 
-
-El pipeline está diseñado de forma secuencial mediante el uso de dependencias (`needs`), garantizando que la aplicación solo avance si cumple estrictamente con las políticas de calidad y seguridad establecidas.
+El flujo de automatización se encuentra estructurado de manera secuencial a través de dependencias jerárquicas (`needs`) dentro de `.github/workflows/ci.yml`. El pipeline está programado para ejecutarse ante eventos de `push` y `pull_request`, garantizando que ningún código defectuoso o vulnerable llegue a la rama principal sin validación previa.
 
 ### 📊 Diagrama del Flujo Automatizado
-[ Push en Main ]
-│
-▼
-┌──────────────┐
-│    Stage 1   │
-│ Test & Sonar │ ──► (Si las Pruebas o el Quality Gate fallan, el flujo SE BLOQUEA)
-└──────────────┘
-│ (Success)
-▼
-┌──────────────┐
-│    Stage 2   │
-│ Build Docker │ ──► (Genera la Imagen Multi-stage y la taguea con el SHA de Git)
-└──────────────┘
-│ (Success)
-▼
-┌──────────────┐
-│    Stage 3   │
-│ Deploy App   │ ──► (Orquesta el entorno simulado levantando la app y PostgreSQL)
-└──────────────┘
+```text
+  [ Evento de Git ]
+         │
+         ▼
+ ┌───────────────┐
+ │    Stage 1    │
+ │ Test & Sonar  │ ──► (Genera artefactos de pruebas, Jacoco y compila el .JAR)
+ └───────────────┘
+         │ (Si todo pasa con éxito)
+         ▼
+ ┌───────────────┐
+ │    Stage 2    │
+ │ Build & Push  │ ──► (Construye la imagen Docker y la publica en GHCR)
+ └───────────────┘
+         │ (Si la imagen sube correctamente)
+         ▼
+ ┌───────────────┐
+ │    Stage 3    │
+ │  Deploy App   │ ──► (Simula el despliegue multi-contenedor con Docker Compose)
+ └───────────────┘
+🛠️ 2. Descripción de las Etapas del Pipeline y Cumplimiento de Indicadores
+🧪 Etapa 1: Análisis de Calidad, Cobertura y Generación de Artefactos (sonar)
+Ejecución de Pruebas: Se lanzan de forma automatizada los tests unitarios clave (CreateTicketUseCaseTest, GetTicketUseCaseTest, TicketTest) con Maven.
 
-## 🛠️ 2. Descripción de las Etapas del Pipeline
+Auditoría y Reportes (IE2): Utilizando la acción actions/upload-artifact@v4, se capturan y exportan los resultados de Surefire (reporte-pruebas-unitarias) e incluso si una prueba falla, el artefacto se genera obligatoriamente para facilitar el diagnóstico.
 
-### 🧪 Etapa 1: Análisis de Calidad y Pruebas Unitarias (`sonar`)
-* **Propósito:** Validar la estabilidad del código y asegurar que no existan regresiones.
-* **Mecanismo:** Se configuran las dependencias del entorno virtual usando Java 17 (Temurin). Se ejecutan de manera automatizada las pruebas unitarias a través del comando `mvn verify sonar:sonar`.
-* **Gobernanza y Bloqueo:** Los resultados son enviados directamente a **SonarCloud** (SonarQube en la nube). El pipeline está configurado de manera **bloqueante**; si las pruebas fallan o si el código no supera los umbrales de seguridad mínimos exigidos por la plataforma, el flujo se interrumpe inmediatamente para proteger la estabilidad del software.
+Calidad y Cobertura: Se integra la herramienta JaCoCo para auditar el porcentaje de cobertura del código y se publica su reporte (jacoco-report). Adicionalmente, el proyecto se vincula directamente con la organización en SonarCloud (yaquelin2305) para bloquear el pipeline si no se superan las métricas mínimas de seguridad.
 
-### 🐳 Etapa 2: Contenerización y Empaquetado (`build-image`)
-* **Propósito:** Aislar la aplicación y sus dependencias para garantizar su portabilidad en la nube.
-* **Mecanismo:** Utiliza un archivo `Dockerfile` basado en una estrategia de **Construcción Multi-etapa (Multi-stage build)**:
-  1. *Etapa de Compilación:* Usa una imagen de Maven para empaquetar el código fuente y compilar el archivo `.jar`.
-  2. *Etapa de Ejecución:* Migra únicamente el artefacto final a una imagen base ligera de Java JRE basada en Alpine Linux, optimizando el tamaño y eliminando herramientas innecesarias para reducir la superficie de ataques.
-* **Publicación:** La imagen resultante es almacenada de forma segura en **GitHub Packages** (`ghcr.io`).
+Compilación (IE4): Al finalizar con éxito el análisis, se empaqueta la aplicación generando el archivo binario ejecutable (.jar) y guardándolo como artefacto trazable.
 
-### 📦 Etapa 3: Orquestación y Despliegue Simulado (`deploy`)
-* **Propósito:** Desplegar de forma automatizada y controlada la solución tecnológica completa.
-* **Mecanismo:** Mediante **Docker Compose**, el pipeline simula un entorno productivo en la nube levantando simultáneamente dos contenedores interconectados en una red aislada:
-  1. `tickets_app`: El microservicio contenedorizado expuesto en el puerto `8081`.
-  2. `tickets_db`: Un motor de base de datos PostgreSQL (`postgres:15-alpine`) requerido para la persistencia.
-* **Estabilidad y Escalabilidad:** El archivo `docker-compose.yml` incorpora límites estrictos de recursos de hardware (restricciones de CPU y Memoria RAM por contenedor) y políticas de reinicio ante fallos (`restart_policy`), asegurando la resiliencia de la infraestructura.
+🐳 Etapa 2: Contenerización y Empaquetado Multietapa (build-image)
+Dockerfile Optimizado (IE1, IE5): Se utiliza un esquema de Construcción Multi-etapa (Multi-stage). La fase de compilación utiliza una imagen robusta de Maven (maven:3.9.8-eclipse-temurin-17-alpine) para resolver dependencias físicas aisladas, mientras que la fase final migra únicamente el .jar compilado a una imagen JRE de Alpine extremadamente ligera (eclipse-temurin:17-jre-alpine), reduciendo drásticamente la superficie de ataque y el tamaño en disco.
 
----
+Seguridad y Menor Privilegio (IE3): Se rompe el uso del usuario por defecto root. Se crea explícitamente el grupo devopsgroup y el usuario restringido devopsuser para ejecutar los comandos internos del contenedor de manera segura.
 
-## 🔍 3. Estrategia de Trazabilidad Total
+Gobernanza y Publicación: Se elevan dinámicamente los privilegios del GITHUB_TOKEN mediante la propiedad permissions: packages: write, lo que permite el logeo y subida automatizada de la imagen hacia el registro de paquetes oficial de GitHub Container Registry (ghcr.io).
 
-Para cumplir con las máximas exigencias de gobernanza, el pipeline implementa un mecanismo de **Trazabilidad de Extremo a Extremo** mediante el uso del ID único del commit de Git (`${{ github.sha }}`):
+📦 Etapa 3: Orquestación y Despliegue Simulado (deploy)
+Orquestación Multi-contenedor (IE1): Mediante docker-compose.yml, el pipeline simula un despliegue completo de la solución tecnológica interactuando en red. Levanta concurrentemente el contenedor de la aplicación Spring Boot (app) y el contenedor del motor de base de datos relacional PostgreSQL (tickets_db).
 
-1. Cada vez que se construye la imagen Docker en GitHub Actions, esta es etiquetada (tagueada) con el código alfanumérico exacto del commit que originó el cambio.
-2. Durante la etapa de despliegue, el pipeline inyecta esta etiqueta en el entorno.
-3. Esto permite a los administradores de sistemas y equipos de QA rastrear cualquier contenedor en ejecución en la nube y saber con absoluta certeza física qué línea de código exacta, qué autor y qué cambios originaron la versión que está corriendo en producción.
+Trazabilidad Absoluta: Cumpliendo con estrictos estándares de gobernanza, cada imagen construida es etiquetada unívocamente usando el identificador corto del commit actual de Git (${{ github.sha }}). Durante el despliegue en Docker Compose, se inyecta la variable de entorno IMAGE_TAG para asegurar la reproducibilidad exacta del software en ejecución.
 
----
+⚙️ 3. Ejecución y Configuración en Entornos Locales
+🔑 3.1 Carga de Secretos en el Repositorio
+Para que el pipeline funcione correctamente, se configuraron las siguientes variables en la sección de Settings > Secrets and variables > Actions de GitHub:
 
-## ⚙️ 4. Requisitos para la Ejecución Local
+SONAR_TOKEN: Token de autenticación de SonarCloud.
 
-Si deseas probar la infraestructura de contenedores de manera local en tu máquina, clona el repositorio y asegúrate de contar con Docker instalado. Luego, ejecuta en la raíz:
+SONAR_PROJECT_KEY: Identificador único del proyecto en la plataforma.
 
-```bash
-# Construir las imágenes locales y levantar la solución completa
-docker-compose up -d --build
+SONAR_ORGANIZATION: Nombre de la organización (yaquelin2305).
 
-# Verificar el estado de los contenedores y límites de recursos
+DB_PASSWORD: Credencial segura para la inicialización y conexión del motor PostgreSQL.
+
+💻 3.2 Despliegue Manual con Docker Compose
+Si se desea replicar localmente la infraestructura multi-contenedor, ejecute los siguientes comandos en la raíz del proyecto:
+
+Bash
+# Definir variables mínimas necesarias en tu terminal local
+export DB_PASSWORD=tu_clave_segura_aqui
+
+# Construir las imágenes y levantar los servicios en segundo plano
+docker compose up -d
+
+# Validar que ambos servicios se encuentren saludables y corriendo
 docker ps
-docker stats
+🎓 4. Reflexión Académica 
+Estudiante: Yaquelin Rugel
+
+Asignatura:  Ingenieria DevOps 
+
+"El desarrollo e implementación de este pipeline representó un gran desafío de aprendizaje conceptual y técnico. A nivel de infraestructura, comprender la separación de responsabilidades a través de un Dockerfile multi-etapa y restringir los accesos de ejecución mediante un usuario no-root me demostró que la seguridad no es un añadido del final, sino un pilar fundamental desde la misma línea de código. Asimismo, la automatización del pipeline con GitHub Actions me enseñó el valor real de la Integración Continua: lograr corregir errores de permisos en tiempo de compilación y asegurar que todo cambio se audite de extremo a extremo mediante el SHA de los commits me brindó una visión clara de cómo se gobierna y protege el software moderno en entornos de producción reales."
