@@ -30,7 +30,7 @@ jobs:
         run: chmod +x mvnw
 
       - name: Ejecutar pruebas unitarias
-        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest
+        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest,TicketControllerTest
 
       # IE2: Generación y Publicación del Artefacto de Pruebas
       # Este paso se ejecuta SIEMPRE (incluso si algún test falla) para poder auditar los errores
@@ -47,7 +47,7 @@ jobs:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
           ./mvnw verify sonar:sonar \
-            -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest \
+            -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest,TicketControllerTest \
             -Dsonar.projectKey="${{ secrets.SONAR_PROJECT_KEY }}" \
             -Dsonar.organization="${{ secrets.SONAR_ORGANIZATION }}" \
             -Dsonar.host.url="https://sonarcloud.io" \
