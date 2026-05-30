@@ -19,9 +19,9 @@ public class TicketController {
     }
 
     @GetMapping("/ping")
-    public String ping() {
-        return "Todo ok con los tickets";
-    }
+public String ping() {
+    return "Despliegue Automatizado Exitoso - Integrantes: Yaquelin Rugel & Yeider Catari";
+}
 
     @PostMapping
     public Ticket createTicket(@RequestBody Ticket ticket) {
