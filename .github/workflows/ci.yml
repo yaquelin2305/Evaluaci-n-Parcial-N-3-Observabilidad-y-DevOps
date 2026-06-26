@@ -36,7 +36,7 @@ jobs:
       # Este paso se ejecuta SIEMPRE (incluso si algún test falla) para poder auditar los errores
       - name: Publicar Artefacto de Reportes de Test
         if: always()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: reporte-pruebas-unitarias
           path: target/surefire-reports/
@@ -54,7 +54,7 @@ jobs:
             -Dsonar.token="${{ secrets.SONAR_TOKEN }}"
 
       - name: Subir reporte de cobertura Jacoco
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: jacoco-report-${{ github.sha }}
           path: target/site/jacoco/
@@ -63,7 +63,7 @@ jobs:
         run: ./mvnw clean package -DskipTests
 
       - name: Subir artefacto JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: tickets-app-${{ github.sha }}
           path: target/*.jar
