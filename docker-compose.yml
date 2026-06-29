@@ -22,7 +22,7 @@ services:
         max_attempts: 3
 
   app:
-    image: ghcr.io/yaquelin2305/tickets-app-cicd/tickets-app:${IMAGE_TAG:-latest}
+    image: ghcr.io/yaquelin2305/tickets-app:${IMAGE_TAG:-latest}
     ports:
       - "8081:8081"
     environment:
