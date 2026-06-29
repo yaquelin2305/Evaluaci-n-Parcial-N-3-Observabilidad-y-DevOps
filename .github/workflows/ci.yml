@@ -29,8 +29,8 @@ jobs:
       - name: Dar permisos de ejecución al wrapper
         run: chmod +x mvnw
 
-      - name: Ejecutar pruebas unitarias
-        run: ./mvnw test -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest,TicketControllerTest
+      - name: Ejecutar pruebas y generar cobertura JaCoCo
+        run: ./mvnw clean verify -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest,TicketControllerTest
 
       # Generación y Publicación del Artefacto de Pruebas
       - name: Publicar Artefacto de Reportes de Test
@@ -41,12 +41,19 @@ jobs:
           path: target/surefire-reports/
           retention-days: 5
 
+      - name: Verificar que el reporte de cobertura existe
+        run: |
+          if [ ! -f target/site/jacoco/jacoco.xml ]; then
+            echo "ERROR: no se generó target/site/jacoco/jacoco.xml"
+            exit 1
+          fi
+          echo "OK: reporte JaCoCo encontrado"
+
       - name: Analisis SonarCloud (bloquea si falla)
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         run: |
-          ./mvnw verify sonar:sonar \
-            -Dtest=CreateTicketUseCaseTest,GetTicketUseCaseTest,TicketTest,TicketControllerTest \
+          ./mvnw sonar:sonar \
             -Dsonar.projectKey="${{ secrets.SONAR_PROJECT_KEY }}" \
             -Dsonar.organization="${{ secrets.SONAR_ORGANIZATION }}" \
             -Dsonar.host.url="https://sonarcloud.io" \
@@ -58,9 +65,6 @@ jobs:
         with:
           name: jacoco-report-${{ github.sha }}
           path: target/site/jacoco/
-
-      - name: Compilar proyecto
-        run: ./mvnw clean package -DskipTests
 
       - name: Subir artefacto JAR
         uses: actions/upload-artifact@v4
