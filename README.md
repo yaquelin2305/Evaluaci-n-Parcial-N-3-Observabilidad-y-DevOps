@@ -434,17 +434,27 @@ Widgets de texto del dashboard mostrando la cobertura de pruebas reportada por J
 
 ---
 
-### Evidencia 6: SonarCloud — Quality Gate y detención del pipeline (falla crítica)
+### Evidencia 6: Dashboard CloudWatch — widgets adicionales del panel
 
-SonarCloud detectó issues de seguridad en el código (vulnerabilidades críticas en `UserController`) y el Quality Gate falló. Al fallar el job `sonar`, los jobs `build-image` y `deploy` nunca se ejecutaron, demostrando que el mecanismo de interrupción del pipeline ante fallas críticas funciona correctamente (IE6).
+Widgets del dashboard `tickets-app-dashboard` mostrando métricas complementarias de la instancia EC2 integradas en el panel de observabilidad.
 
-<img width="951" height="298" alt="SonarCloud Quality Gate Failed — pipeline detenido" src="https://github.com/user-attachments/assets/f62a2631-4af3-45b3-8286-71ef5633c7d4" />
+<img width="951" height="298" alt="Widgets adicionales del dashboard CloudWatch" src="https://github.com/user-attachments/assets/f62a2631-4af3-45b3-8286-71ef5633c7d4" />
 
 ---
 
-### Evidencia 7: Branch Protection activa en GitHub (falta por agregar)
+### Evidencia 7: SonarCloud — Quality Gate y detención del pipeline (falta por agregar)
 
-Configuración de reglas de protección de ramas `main` y `develop` en GitHub mostrando la regla "Require a pull request before merging" activa. *(Captura pendiente — requiere acceso de administrador al repositorio para visualizar la configuración completa.)*
+SonarCloud detectó issues de seguridad en el código y el Quality Gate falló. Al fallar el job `sonar`, los jobs `build-image` y `deploy` nunca se ejecutaron, demostrando que el mecanismo de interrupción del pipeline ante fallas críticas funciona correctamente (IE6). *(Captura pendiente.)*
+
+---
+
+### Evidencia 8: Branch Protection activa en GitHub
+
+Reglas de protección configuradas en las ramas `main` y `develop`. La primera captura muestra la regla activa "Require a pull request before merging" que bloquea todo push directo y exige PR aprobado. La segunda muestra la lista de reglas aplicadas con su estado activo en el repositorio.
+
+<img width="910" height="570" alt="Branch protection rule - Require pull request before merging" src="https://github.com/user-attachments/assets/d1513ef3-feb9-4266-ad30-4cff191e338d" />
+
+<img width="914" height="396" alt="Branch protection rules activas en el repositorio" src="https://github.com/user-attachments/assets/527b4903-4a03-4b59-b392-e6697b8e584a" />
 
 ---
 
