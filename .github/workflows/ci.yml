@@ -50,7 +50,8 @@ jobs:
             -Dsonar.projectKey="${{ secrets.SONAR_PROJECT_KEY }}" \
             -Dsonar.organization="${{ secrets.SONAR_ORGANIZATION }}" \
             -Dsonar.host.url="https://sonarcloud.io" \
-            -Dsonar.token="${{ secrets.SONAR_TOKEN }}"
+            -Dsonar.token="${{ secrets.SONAR_TOKEN }}" \
+            -Dsonar.coverage.jacoco.xmlReportPaths=target/site/jacoco/jacoco.xml
 
       - name: Subir reporte de cobertura Jacoco
         uses: actions/upload-artifact@v4
