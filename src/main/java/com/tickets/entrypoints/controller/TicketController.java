@@ -26,7 +26,7 @@ public class TicketController {
 
     @GetMapping("/ping")
     public String ping() {
-        return "Todo ok con los tickets";
+        return "Todo ok con los tickets - Actualizado";
     }
 
     @PostMapping
